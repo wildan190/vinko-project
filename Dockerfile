@@ -1,6 +1,6 @@
 FROM dunglas/frankenphp:php8.4-alpine
 
-# Install tool pendukung
+# Install system dependencies
 RUN apk add --no-cache bash
 
 # Install PHP extensions
@@ -22,4 +22,5 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
+# Permission standar (Akan diperbaiki lagi lewat command line)
 RUN mkdir -p storage bootstrap/cache
