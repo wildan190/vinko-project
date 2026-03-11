@@ -678,7 +678,25 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-gray-400 italic">No data available.</td>
+                                <!-- <td colspan="5" class="px-6 py-4 text-center text-gray-400 italic">No data available.</td> -->
+                            <td class="px-6 py-4 text-center">
+    @if(isset($product) && $product->merged_image)
+        @php
+            // Cek apakah thumbnail ada, jika tidak pakai gambar asli
+            $thumbPath = 'thumbnails/merged/' . basename($product->merged_image);
+            $displayImage = \Storage::disk('public')->exists($thumbPath) 
+                            ? asset('storage/' . $thumbPath) 
+                            : asset('storage/' . $product->merged_image);
+        @endphp
+        <a href="{{ asset('storage/' . $product->merged_image) }}" target="_blank">
+            <img src="{{ $displayImage }}" 
+                 class="w-16 h-16 object-cover rounded border border-purple-200 mx-auto" 
+                 loading="lazy">
+        </a>
+    @else
+        <span class="text-gray-300 italic text-xs">Not Merged</span>
+    @endif
+</td>
                             </tr>
                         @endforelse
                     </tbody>
