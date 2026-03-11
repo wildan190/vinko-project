@@ -1,9 +1,9 @@
-FROM dunglas/frankenphp:latest-php8.3-alpine
+FROM dunglas/frankenphp:latest-php8.4-alpine
 
-# Install tool pendukung untuk install-php-extensions
+# Install tool pendukung
 RUN apk add --no-cache bash
 
-# Install PHP extensions yang kamu minta
+# Install PHP extensions (tetap sama, tapi untuk PHP 8.4)
 RUN install-php-extensions \
     bcmath \
     gd \
@@ -16,11 +16,9 @@ RUN install-php-extensions \
     mbstring \
     xml
 
-# COPY Composer dari image resmi composer ke dalam image FrankenPHP kita
+# Copy Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /app
 
-# Berikan izin ke folder storage & bootstrap (penting untuk Laravel)
 RUN mkdir -p storage bootstrap/cache
