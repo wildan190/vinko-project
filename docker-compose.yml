@@ -1,0 +1,59 @@
+services:
+  # FrankenPHP (App + Web Server)
+  app:
+    image: dunglas/frankenphp:latest-php8.3-alpine
+    container_name: vinko-app
+    restart: always
+    ports:
+      - "8080:8000"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - .:/app
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      SERVER_NAME: baimo-tupipei.online
+      FRANKENPHP_CONFIG: "worker ./public/index.php"
+    depends_on:
+      - db
+      - redis
+
+  # PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: vinko-db
+    restart: always
+    environment:
+      POSTGRES_DB: vinko_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: manchester
+    ports:
+      - "5433:5432" # Pakai 5433 agar tidak bentrok dengan Postgres existing
+    volumes:
+      - vinko_db_data:/var/lib/postgresql/data
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: vinko-redis
+    restart: always
+    ports:
+      - "6380:6379" # Pakai 6380 agar tidak bentrok dengan Redis existing
+
+  # Laravel Horizon (Queue & Batching)
+  horizon:
+    image: dunglas/frankenphp:latest-php8.3-alpine
+    container_name: vinko-horizon
+    restart: always
+    volumes:
+      - .:/app
+    command: php artisan horizon
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  vinko_db_data:
+  caddy_data:
+  caddy_config:
