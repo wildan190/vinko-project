@@ -1,9 +1,9 @@
 FROM dunglas/frankenphp:php8.4-alpine
 
-# Install system dependencies
+# Install bash untuk kenyamanan terminal
 RUN apk add --no-cache bash
 
-# Install PHP extensions
+# Install PHP extensions pesanan Laravel
 RUN install-php-extensions \
     bcmath \
     gd \
@@ -17,10 +17,10 @@ RUN install-php-extensions \
     xml \
     fileinfo
 
-# Copy Composer
+# Ambil Composer terbaru
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Permission standar (Akan diperbaiki lagi lewat command line)
+# Set permission dasar
 RUN mkdir -p storage bootstrap/cache
