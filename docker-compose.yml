@@ -27,7 +27,8 @@ services:
     restart: always
     volumes:
       - .:/app
-    command: php artisan horizon
+    # KITA PAKSA DIAM SUPAYA NGAK RESTARTING
+    command: tail -f /dev/null 
     depends_on:
       - app
       - redis
