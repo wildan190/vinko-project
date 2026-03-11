@@ -157,72 +157,85 @@
                     });
                 });
 
-                // Process Merge with Progress Bar
-                const mergeBtn = document.getElementById('btn-process-merge');
-                if (mergeBtn) {
-                    mergeBtn.addEventListener('click', async function(e) {
-                        e.preventDefault();
+                // Consolidated Merge Logic
+                async function handleMerge(ids = null) {
+                    const isBulk = !ids;
+                    const title = isBulk ? 'Merging Images...' : 'Merging Selected Images...';
+                    const payload = ids ? { ids } : {};
+
+                    try {
+                        const response = await fetch('{{ route('product-export.process') }}', {
+                            method: 'POST', // Fixed typo: replaced 'route' with 'method'
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify(payload)
+                        });
                         
-                        try {
-                            const response = await fetch('{{ route('product-export.process') }}', {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            });
-                            
-                            const data = await response.json();
-                            if (!response.ok) throw new Error(data.error || 'Failed to start process');
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.error || 'Failed to start process');
 
-                            const batchId = data.batchId;
-                            const total = data.total;
-                            
-                            Swal.fire({
-                                title: 'Merging Images...',
-                                html: `
-                                    <div class="mb-2 text-sm">Processing <span id="processed-count">0</span> of ${total} images</div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                        <div id="merge-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                                    </div>
-                                `,
-                                allowOutsideClick: false,
-                                showConfirmButton: false,
-                                didOpen: () => { Swal.showLoading(); }
-                            });
+                        const batchId = data.batchId;
+                        const total = data.total;
+                        
+                        Swal.fire({
+                            title: title,
+                            html: `
+                                <div class="mb-2 text-sm">Processing <span id="processed-count">0</span> of ${total} images</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                    <div id="merge-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            `,
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
 
-                            // Poll for batch status
-                            const interval = setInterval(async () => {
+                        const interval = setInterval(async () => {
+                            try {
                                 const statusResponse = await fetch(`/product-export/batch-status/${batchId}`);
+                                if (!statusResponse.ok) return;
+                                
                                 const batch = await statusResponse.json();
+                                if (!batch) return;
 
-                                if (batch) {
-                                    const processed = batch.processedJobs;
-                                    const progress = batch.progress;
-                                    
-                                    const progressBar = document.getElementById('merge-progress-bar');
-                                    if (progressBar) progressBar.style.width = progress + '%';
-                                    const countLabel = document.getElementById('processed-count');
-                                    if (countLabel) countLabel.innerText = processed;
+                                const processed = batch.processedJobs;
+                                const progress = batch.progress;
+                                
+                                const progressBar = document.getElementById('merge-progress-bar');
+                                if (progressBar) progressBar.style.width = progress + '%';
+                                const countLabel = document.getElementById('processed-count');
+                                if (countLabel) countLabel.innerText = processed;
 
-                                    if (batch.finishedAt) {
-                                        clearInterval(interval);
-                                        Swal.fire({ title: 'Success!', text: 'All images merged successfully.', icon: 'success' })
-                                            .then(() => window.location.reload());
-                                    }
-                                    
-                                    if (batch.failedJobs > 0 && batch.finishedAt) {
-                                        clearInterval(interval);
+                                if (batch.finishedAt) {
+                                    clearInterval(interval);
+                                    if (batch.failedJobs > 0) {
                                         Swal.fire('Warning!', 'Some jobs failed to process. Check Horizon.', 'warning')
                                             .then(() => window.location.reload());
+                                    } else {
+                                        Swal.fire('Success!', 'Images merged successfully.', 'success')
+                                            .then(() => window.location.reload());
                                     }
                                 }
-                            }, 2000);
+                            } catch (e) {
+                                console.error('Polling error:', e);
+                            }
+                        }, 2000);
 
-                        } catch (error) {
-                            Swal.fire('Error!', error.message, 'error');
-                        }
+                    } catch (error) {
+                        Swal.fire('Error!', error.message, 'error');
+                    }
+                }
+
+                // Process All Merge
+                const mergeBtn = document.getElementById('btn-process-merge');
+                if (mergeBtn) {
+                    mergeBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        handleMerge();
                     });
                 }
 
@@ -415,16 +428,16 @@
                     }
                 }
 
-                // Select All & Bulk Actions Logic
+                // Bulk Actions logic
                 const selectAll = document.getElementById('select-all');
-                const checkboxes = document.querySelectorAll('.product-checkbox');
                 const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
                 const mergeSelectedBtn = document.getElementById('btn-merge-selected');
                 const selectedCountLabel = document.getElementById('selected-count');
                 const mergeSelectedCountSpan = document.getElementById('merge-selected-count');
 
                 function updateBulkActions() {
-                    const count = document.querySelectorAll('.product-checkbox:checked').length;
+                    const checkedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+                    const count = checkedCheckboxes.length;
                     
                     if (selectedCountLabel) selectedCountLabel.innerText = count;
                     if (mergeSelectedCountSpan) mergeSelectedCountSpan.innerText = count;
@@ -440,80 +453,28 @@
 
                 if (selectAll) {
                     selectAll.addEventListener('change', function() {
+                        const checkboxes = document.querySelectorAll('.product-checkbox:not(:disabled)');
                         checkboxes.forEach(cb => {
-                            if (!cb.disabled) {
-                                cb.checked = this.checked;
-                            }
+                            cb.checked = this.checked;
                         });
                         updateBulkActions();
                     });
                 }
 
-                checkboxes.forEach(cb => {
-                    cb.addEventListener('change', updateBulkActions);
+                // Delegate checkbox change events
+                document.addEventListener('change', function(e) {
+                    if (e.target.classList.contains('product-checkbox')) {
+                        updateBulkActions();
+                    }
                 });
 
                 if (mergeSelectedBtn) {
-                    mergeSelectedBtn.addEventListener('click', async function() {
+                    mergeSelectedBtn.addEventListener('click', function() {
                         const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
                             .map(cb => cb.value);
 
-                        if (selectedIds.length === 0) return;
-
-                        try {
-                            const response = await fetch('{{ route('product-export.process') }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify({ ids: selectedIds })
-                            });
-                            
-                            const data = await response.json();
-                            if (!response.ok) throw new Error(data.error || 'Failed to start process');
-
-                            const batchId = data.batchId;
-                            const total = data.total;
-                            
-                            Swal.fire({
-                                title: 'Merging Selected Images...',
-                                html: `
-                                    <div class="mb-2 text-sm">Processing <span id="processed-count">0</span> of ${total} images</div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                        <div id="merge-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                                    </div>
-                                `,
-                                allowOutsideClick: false,
-                                showConfirmButton: false,
-                                didOpen: () => { Swal.showLoading(); }
-                            });
-
-                            const interval = setInterval(async () => {
-                                const statusResponse = await fetch(`/product-export/batch-status/${batchId}`);
-                                const batch = await statusResponse.json();
-
-                                if (batch) {
-                                    const processed = batch.processedJobs;
-                                    const progress = batch.progress;
-                                    
-                                    const progressBar = document.getElementById('merge-progress-bar');
-                                    if (progressBar) progressBar.style.width = progress + '%';
-                                    const countLabel = document.getElementById('processed-count');
-                                    if (countLabel) countLabel.innerText = processed;
-
-                                    if (batch.finishedAt) {
-                                        clearInterval(interval);
-                                        Swal.fire({ title: 'Success!', text: 'Selected images merged successfully.', icon: 'success' })
-                                            .then(() => window.location.reload());
-                                    }
-                                }
-                            }, 2000);
-
-                        } catch (error) {
-                            Swal.fire('Error!', error.message, 'error');
+                        if (selectedIds.length > 0) {
+                            handleMerge(selectedIds);
                         }
                     });
                 }
