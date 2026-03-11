@@ -1,9 +1,9 @@
 FROM dunglas/frankenphp:latest-php8.4-alpine
 
-# Install tool pendukung
+# Install system dependencies
 RUN apk add --no-cache bash
 
-# Install PHP extensions (tetap sama, tapi untuk PHP 8.4)
+# Install PHP extensions lengkap sesuai permintaan
 RUN install-php-extensions \
     bcmath \
     gd \
@@ -14,11 +14,13 @@ RUN install-php-extensions \
     pdo_pgsql \
     redis \
     mbstring \
-    xml
+    xml \
+    fileinfo
 
-# Copy Composer
+# Copy Composer dari image resmi
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
+# Set permission dasar
 RUN mkdir -p storage bootstrap/cache

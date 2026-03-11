@@ -1,25 +1,23 @@
 services:
-  # FrankenPHP (App)
+  # App & Web Server (FrankenPHP)
   app:
     build: .
     container_name: vinko-app
     restart: always
     ports:
-      - "9000:8000"   # Kita arahkan port luar 9000 ke port dalam 8000
-    # Hapus baris port 443 agar tidak bentrok
+      - "9000:8000"
     volumes:
       - .:/app
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      # Kita pakai http:// saja di level Docker agar tidak mencoba bind port 443
-      SERVER_NAME: "http://baimo-tupipei.online" 
+      SERVER_NAME: "http://baimo-tupipei.online"
       FRANKENPHP_CONFIG: "worker ./public/index.php"
     depends_on:
       - db
       - redis
 
-  # PostgreSQL (Database)
+  # PostgreSQL
   db:
     image: postgres:15-alpine
     container_name: vinko-db
@@ -29,7 +27,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: manchester
     ports:
-      - "5435:5432"  # Kita geser lagi ke 5435 biar makin jauh dari default
+      - "5435:5432"
     volumes:
       - vinko_db_data:/var/lib/postgresql/data
 
@@ -39,9 +37,9 @@ services:
     container_name: vinko-redis
     restart: always
     ports:
-      - "6385:6379"  # Kita geser ke 6385
+      - "6385:6379"
 
-  # Laravel Horizon
+  # Laravel Horizon (Queue & Batching)
   horizon:
     build: .
     container_name: vinko-horizon
