@@ -30,16 +30,27 @@
                     
                     progressContainer.classList.remove('hidden');
                     
-                    // Show a global "Uploading..." state with cancel button
+                    // Show a global "Uploading..." state with cancel button and progress
                     Swal.fire({
                         title: 'Uploading...',
-                        text: 'Please wait until the upload is complete.',
+                        html: `
+                            <div class="mb-2 text-sm text-gray-600 dark:text-gray-400">Please wait until the upload is complete.</div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-xs font-medium text-blue-700 dark:text-white">Progress</span>
+                                <span id="upload-percent-text" class="text-xs font-medium text-blue-700 dark:text-white">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div id="upload-progress-bar-swal" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        `,
                         allowOutsideClick: false,
                         showCancelButton: true,
                         cancelButtonText: 'Cancel Upload',
                         cancelButtonColor: '#d33',
                         showConfirmButton: false,
-                        didOpen: () => { Swal.showLoading(); }
+                        didOpen: () => { 
+                            // We don't use showLoading() here to keep the HTML visible
+                        }
                     }).then((result) => {
                         if (result.dismiss === Swal.DismissReason.cancel) {
                             if (activeXHR) {
@@ -60,8 +71,16 @@
 
                     xhr.upload.onprogress = function(e) {
                         if (e.lengthComputable) {
-                            const percentComplete = (e.loaded / e.total) * 100;
+                            const percentComplete = Math.round((e.loaded / e.total) * 100);
+                            
+                            // Update row progress bar
                             progressBar.style.width = percentComplete + '%';
+                            
+                            // Update Swal progress bar and text
+                            const swalBar = document.getElementById('upload-progress-bar-swal');
+                            const swalText = document.getElementById('upload-percent-text');
+                            if (swalBar) swalBar.style.width = percentComplete + '%';
+                            if (swalText) swalText.innerText = percentComplete + '%';
                         }
                     };
 
