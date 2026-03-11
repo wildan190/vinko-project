@@ -1,7 +1,7 @@
 services:
   # FrankenPHP (App + Web Server)
   app:
-    image: dunglas/frankenphp:latest-php8.3-alpine
+    build: .  # <--- INI PENTING: Mengarahkan ke Dockerfile di folder yang sama
     container_name: vinko-app
     restart: always
     ports:
@@ -19,7 +19,7 @@ services:
       - db
       - redis
 
-  # PostgreSQL
+  # PostgreSQL (Tetap pakai image standar)
   db:
     image: postgres:15-alpine
     container_name: vinko-db
@@ -29,21 +29,21 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: manchester
     ports:
-      - "5433:5432" # Pakai 5433 agar tidak bentrok dengan Postgres existing
+      - "5433:5432"
     volumes:
       - vinko_db_data:/var/lib/postgresql/data
 
-  # Redis
+  # Redis (Tetap pakai image standar)
   redis:
     image: redis:alpine
     container_name: vinko-redis
     restart: always
     ports:
-      - "6380:6379" # Pakai 6380 agar tidak bentrok dengan Redis existing
+      - "6380:6379"
 
-  # Laravel Horizon (Queue & Batching)
+  # Laravel Horizon (Gunakan build yang sama dengan app)
   horizon:
-    image: dunglas/frankenphp:latest-php8.3-alpine
+    build: . # <--- Menggunakan Dockerfile yang sama agar extensinya lengkap
     container_name: vinko-horizon
     restart: always
     volumes:
