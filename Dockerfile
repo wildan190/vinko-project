@@ -10,12 +10,14 @@ RUN apk add --no-cache \
     autoconf \
     gcc \
     g++ \
-    make
+    make \
+    nodejs \
+    npm
 
-# Install PHP extensions (Tambahkan pcntl di sini)
+# Install PHP extensions
 RUN docker-php-ext-install bcmath gd intl zip pdo_pgsql pcntl
 
-# Install Redis extension (Penting untuk Horizon)
+# Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
 # Copy Composer
