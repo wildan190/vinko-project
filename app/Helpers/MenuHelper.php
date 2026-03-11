@@ -8,11 +8,6 @@ class MenuHelper
     {
         return [
             [
-                'icon' => 'dashboard',
-                'name' => 'Dashboard',
-                'path' => '/',
-            ],
-            [
                 'icon' => 'tables',
                 'name' => 'Product Export',
                 'path' => '/product-export',

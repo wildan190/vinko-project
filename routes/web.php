@@ -13,9 +13,9 @@ Route::post('/signin', [AuthController::class, 'signin'])->name('signin.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    // dashboard pages
+    // redirect root to product export
     Route::get('/', function () {
-        return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
+        return redirect()->route('product-export.index');
     })->name('dashboard');
 
     // product export pages
