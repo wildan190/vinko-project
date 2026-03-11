@@ -1,20 +1,26 @@
 services:
+  # PHP-FPM Service
   app:
     build: .
     container_name: vinko-app
     restart: always
-    ports:
-      - "9000:8000" # Akses lewat IP:9000
     volumes:
       - .:/app
     environment:
-      SERVER_NAME: ":8000"
-      FRANKENPHP_CONFIG: "worker ./public/index.php"
       APP_URL: "https://baimo-tupipei.online"
-      APP_ENV: production
+
+  # Nginx Service (Internal Docker)
+  web:
+    image: nginx:alpine
+    container_name: vinko-web
+    restart: always
+    ports:
+      - "9000:80" # Port 9000 VPS ke Port 80 Nginx Docker
+    volumes:
+      - .:/app
+      - ./nginx-conf/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - db
-      - redis
+      - app
 
   db:
     image: postgres:15-alpine
@@ -35,17 +41,6 @@ services:
     restart: always
     ports:
       - "6385:6379"
-
-  horizon:
-    build: .
-    container_name: vinko-horizon
-    restart: always
-    volumes:
-      - .:/app
-    command: php artisan horizon
-    depends_on:
-      - db
-      - redis
 
 volumes:
   vinko_db_data:

@@ -1,26 +1,16 @@
-FROM dunglas/frankenphp:php8.4-alpine
+FROM php:8.4-fpm-alpine
 
-# Install bash untuk kenyamanan terminal
-RUN apk add --no-cache bash
+# Install system dependencies & PHP extensions
+RUN apk add --no-cache bash libpng-dev libzip-dev icu-dev libpq-dev
+RUN docker-php-ext-install bcmath gd intl zip pdo_pgsql
 
-# Install PHP extensions pesanan Laravel
-RUN install-php-extensions \
-    bcmath \
-    gd \
-    intl \
-    zip \
-    opcache \
-    pcntl \
-    pdo_pgsql \
-    redis \
-    mbstring \
-    xml \
-    fileinfo
-
-# Ambil Composer terbaru
+# Copy Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+# Custom PHP Config untuk Upload 500MB+
+RUN echo "upload_max_filesize=600M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size=600M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit=1G" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "max_execution_time=600" >> /usr/local/etc/php/conf.d/uploads.ini
 
-# Set permission dasar
-RUN mkdir -p storage bootstrap/cache
+WORKDIR /app
