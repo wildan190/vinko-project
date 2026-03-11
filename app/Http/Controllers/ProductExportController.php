@@ -200,6 +200,7 @@ class ProductExportController extends Controller
         }
         if ($product->merged_image) {
             Storage::disk('public')->delete($product->merged_image);
+            Storage::disk('public')->delete('thumbnails/merged/' . basename($product->merged_image));
         }
     }
 }

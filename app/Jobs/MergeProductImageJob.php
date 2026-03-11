@@ -149,6 +149,22 @@ class MergeProductImageJob implements ShouldQueue
 
         $canvas->toPng()->save(Storage::disk('public')->path($savePath));
 
+        // Create Thumbnail for Merged Image (Small thumbnail for UI performance)
+        try {
+            $thumbnail = $manager->read(Storage::disk('public')->path($savePath));
+            $thumbnail->scale(width: 200);
+            
+            $thumbnailDir = 'thumbnails/merged';
+            if (!Storage::disk('public')->exists($thumbnailDir)) {
+                Storage::disk('public')->makeDirectory($thumbnailDir);
+            }
+            
+            $thumbnailPath = $thumbnailDir . '/' . $fileName;
+            $thumbnail->toPng()->save(Storage::disk('public')->path($thumbnailPath));
+        } catch (\Exception $e) {
+            // Silently fail thumbnail creation
+        }
+
         $this->product->update(['merged_image' => $savePath]);
     }
 }

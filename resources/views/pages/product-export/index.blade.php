@@ -652,8 +652,12 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($product->merged_image)
+                                        @php
+                                            $mergedThumbnailPath = 'thumbnails/merged/' . basename($product->merged_image);
+                                            $displayMergedPath = Storage::disk('public')->exists($mergedThumbnailPath) ? $mergedThumbnailPath : $product->merged_image;
+                                        @endphp
                                         <a href="{{ Storage::disk('public')->url($product->merged_image) }}" target="_blank" class="block w-12 h-12">
-                                            <img src="{{ Storage::disk('public')->url($product->merged_image) }}" 
+                                            <img src="{{ Storage::disk('public')->url($displayMergedPath) }}" 
                                                  alt="Merged" 
                                                  class="w-full h-full object-cover rounded shadow-sm hover:scale-105 transition-transform"
                                                  loading="lazy">
