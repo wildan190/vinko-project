@@ -148,7 +148,8 @@ class ProductExportController extends Controller
         $selectedIds = $request->input('ids', []);
 
         $query = ProductExport::whereNotNull('image_path')
-            ->where('image_path', 'not like', '=_xlfn%');
+            ->where('image_path', 'not like', '=_xlfn%')
+            ->whereNull('merged_image'); // Always skip already merged products
 
         if (!empty($selectedIds)) {
             $query->whereIn('id', $selectedIds);
@@ -161,7 +162,7 @@ class ProductExportController extends Controller
         if ($products->isEmpty()) {
             $message = !empty($selectedIds) 
                 ? 'Selected products have no valid images or images have not been uploaded.' 
-                : 'No products with valid uploaded images found.';
+                : 'No new products with valid uploaded images found to merge.';
             return response()->json(['error' => $message], 400);
         }
 
