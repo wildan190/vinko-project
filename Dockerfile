@@ -1,9 +1,12 @@
 FROM php:8.4-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies + Library untuk gambar
 RUN apk add --no-cache \
     bash \
     libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libwebp-dev \
     libzip-dev \
     icu-dev \
     libpq-dev \
@@ -14,10 +17,11 @@ RUN apk add --no-cache \
     nodejs \
     npm
 
-# Install PHP extensions
-RUN docker-php-ext-install bcmath gd intl zip pdo_pgsql pcntl
+# Konfigurasi GD agar mendukung JPEG, FreeType, dan WebP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install bcmath gd intl zip pdo_pgsql pcntl
 
-# Install Redis extension
+# Install Redis
 RUN pecl install redis && docker-php-ext-enable redis
 
 # Copy Composer
