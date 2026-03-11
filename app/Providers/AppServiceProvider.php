@@ -14,8 +14,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(ImageManager::class, function () {
-            return new ImageManager(new ImagickDriver());
+        $this->app->singleton(\Intervention\Image\ImageManager::class, function () {
+        return new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Imagick\Driver());
         });
     }
 
