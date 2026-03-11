@@ -29,6 +29,8 @@
                     formData.append('_token', '{{ csrf_token() }}');
                     
                     progressContainer.classList.remove('hidden');
+                    const progressText = progressContainer.previousElementSibling.querySelector('.progress-text');
+                    if (progressText) progressText.classList.remove('hidden');
                     
                     // Show a global "Uploading..." state with cancel button and progress
                     Swal.fire({
@@ -57,6 +59,7 @@
                                 activeXHR.abort();
                                 activeXHR = null;
                                 progressContainer.classList.add('hidden');
+                                if (progressText) progressText.classList.add('hidden');
                                 progressBar.style.width = '0%';
                                 Swal.fire('Cancelled', 'Upload cancelled by user.', 'info');
                             }
@@ -73,8 +76,9 @@
                         if (e.lengthComputable) {
                             const percentComplete = Math.round((e.loaded / e.total) * 100);
                             
-                            // Update row progress bar
+                            // Update row progress bar and text
                             progressBar.style.width = percentComplete + '%';
+                            if (progressText) progressText.innerText = percentComplete + '%';
                             
                             // Update Swal progress bar and text
                             const swalBar = document.getElementById('upload-progress-bar-swal');
@@ -634,10 +638,13 @@
                                         </div>
                                         
                                         <div class="flex flex-col min-w-[100px]">
-                                            <span class="text-[10px] uppercase tracking-wider text-gray-400 group-hover:text-blue-500 font-semibold transition-colors">
-                                                {{ $product->image_path ? 'Change Image' : 'Drop Image' }}
-                                            </span>
-                                            <div class="progress-container w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 hidden mt-1">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-[10px] uppercase tracking-wider text-gray-400 group-hover:text-blue-500 font-semibold transition-colors">
+                                                    {{ $product->image_path ? 'Change Image' : 'Drop Image' }}
+                                                </span>
+                                                <span class="progress-text text-[10px] font-medium text-blue-500 hidden">0%</span>
+                                            </div>
+                                            <div class="progress-container w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 hidden">
                                                 <div class="progress-bar bg-blue-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
                                             </div>
                                         </div>
