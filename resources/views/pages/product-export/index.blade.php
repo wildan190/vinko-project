@@ -645,6 +645,8 @@
                                 $hasValidImage = $product->image_path && 
                                                  !str_starts_with($product->image_path, '=_xlfn') && 
                                                  Storage::disk('public')->exists($product->image_path);
+                                $isAlreadyMerged = (bool)$product->merged_image;
+                                $canBeMerged = $hasValidImage && !$isAlreadyMerged;
                             @endphp
                             @if($lastOrderNumber !== $product->order_number)
                                 <tr class="bg-gray-50 dark:bg-gray-700/50">
@@ -659,11 +661,11 @@
                                 </tr>
                                 @php $lastOrderNumber = $product->order_number; @endphp
                             @endif
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors {{ $hasValidImage ? '' : 'bg-gray-50/50 dark:bg-gray-800/50' }}">
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors {{ $canBeMerged ? '' : 'bg-gray-50/50 dark:bg-gray-800/50' }}">
                                 <td class="px-4 py-4">
                                     <input type="checkbox" name="ids[]" value="{{ $product->id }}" 
-                                        class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 {{ $hasValidImage ? '' : 'cursor-not-allowed' }}"
-                                        {{ $hasValidImage ? '' : 'disabled' }}>
+                                        class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 {{ $canBeMerged ? '' : 'cursor-not-allowed' }}"
+                                        {{ $canBeMerged ? '' : 'disabled' }}>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
