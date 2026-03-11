@@ -45,90 +45,99 @@ class MergeProductImageJob implements ShouldQueue
         // Revert to GD Driver as Imagick is not available
         $manager = new ImageManager(new GdDriver());
 
-        // Header Dimensions (9cm x 2.5cm) @ 300 DPI
-        // 9cm = 1062px, 2.5cm = 295px
-        $headerWidth = 1062;
-        $headerHeight = 295;
+        // Load Main Product Image first to get its dimensions
+        if ($this->product->image_path && Storage::disk('public')->exists($this->product->image_path)) {
+            $mainImg = $manager->read(Storage::disk('public')->path($this->product->image_path));
+        } else {
+            // Placeholder if image not found (10cm x 10cm @ 300 DPI)
+            $mainImg = $manager->create(1181, 1181)->fill('eeeeee');
+        }
 
-        // Create white header canvas
-        $header = $manager->create($headerWidth, $headerHeight)->fill('ffffff');
+        $imgWidth = $mainImg->width();
+        $imgHeight = $mainImg->height();
 
-        // Add QR Code (right side)
+        // 300 DPI conversion: 1 cm = 118.11 pixels
+        $pxPerCm = 118.11;
+
+        // Requirement: Barcode box is fix 9cm x 2.5cm
+        $boxWidth = round(9 * $pxPerCm);   // ~1063px
+        $boxHeight = round(2.5 * $pxPerCm); // ~295px
+
+        // Requirement: Output height increases by ~3cm (e.g. 50cm -> 53cm)
+        // We will use 3cm as the total header area height
+        $headerAreaHeight = round(3 * $pxPerCm); // ~354px
+
+        // Create the Information Box (The "Barcode Box")
+        $infoBox = $manager->create($boxWidth, $boxHeight)->fill('ffffff');
+        
+        // Add Border to Info Box
+        $infoBox->drawRectangle(0, 0, function($draw) use ($boxWidth, $boxHeight) {
+            $draw->size($boxWidth, $boxHeight);
+            $draw->border('000000', 2);
+        });
+
+        // Add QR Code (inside info box, right side)
         $qrContent = $this->product->tracking_number ?? $this->product->order_number ?? 'N/A';
-        // Simplified QR Generation to avoid Imagick backend issues
         $qrCodeImage = QrCode::format('png')
-            ->size(200)
+            ->size(240)
             ->margin(1)
             ->generate($qrContent);
         
-        // Decode PNG string explicitly to avoid DecoderException
         $qr = $manager->read((string) $qrCodeImage);
-        $header->place($qr, 'right', 20);
-
-        // Add Product Image (small, next to QR)
-        if ($this->product->image_path && Storage::disk('public')->exists($this->product->image_path)) {
-            $smallImg = $manager->read(Storage::disk('public')->path($this->product->image_path));
-            $smallImg->scale(height: 200);
-            $header->place($smallImg, 'right', 240);
-        }
+        $infoBox->place($qr, 'right', 10);
 
         // Font file
         $fontFile = '/System/Library/Fonts/Supplemental/Arial.ttf';
         $fontExists = file_exists($fontFile);
 
-        // Add Text Info
-        $header->text("NO. PESANAN: " . $this->product->order_number, 20, 40, function($font) use ($fontExists, $fontFile) {
+        // Add Text Info to Info Box (left side)
+        $infoBox->text("NO. PESANAN: " . $this->product->order_number, 15, 35, function($font) use ($fontExists, $fontFile) {
             if ($fontExists) $font->file($fontFile);
-            $font->size(24);
+            $font->size(22);
             $font->color('000000');
         });
-        $header->text("SPESIFIKASI: " . $this->product->product_specification, 20, 80, function($font) use ($fontExists, $fontFile) {
+        $infoBox->text("SKU: " . $this->product->sku_platform, 15, 70, function($font) use ($fontExists, $fontFile) {
             if ($fontExists) $font->file($fontFile);
-            $font->size(24);
+            $font->size(22);
             $font->color('000000');
         });
-        $header->text("SKU PLATFORM: " . $this->product->sku_platform, 20, 120, function($font) use ($fontExists, $fontFile) {
+        
+        // Wrap specification text if too long
+        $spec = $this->product->product_specification;
+        if (strlen($spec) > 45) $spec = substr($spec, 0, 42) . '...';
+        
+        $infoBox->text("SPEC: " . $spec, 15, 105, function($font) use ($fontExists, $fontFile) {
             if ($fontExists) $font->file($fontFile);
-            $font->size(24);
-            $font->color('000000');
-        });
-        $header->text("ID PRODUK: " . $this->product->product_id, 20, 160, function($font) use ($fontExists, $fontFile) {
-            if ($fontExists) $font->file($fontFile);
-            $font->size(24);
-            $font->color('000000');
-        });
-        $header->text("ID SKU: " . $this->product->sku_id, 20, 200, function($font) use ($fontExists, $fontFile) {
-            if ($fontExists) $font->file($fontFile);
-            $font->size(24);
-            $font->color('000000');
-        });
-        $header->text("Qty: " . $this->product->quantity, 20, 260, function($font) use ($fontExists, $fontFile) {
-            if ($fontExists) $font->file($fontFile);
-            $font->size(40);
+            $font->size(18);
             $font->color('000000');
         });
 
-        // Load Main Product Image
-        if ($this->product->image_path && Storage::disk('public')->exists($this->product->image_path)) {
-            $mainImg = $manager->read(Storage::disk('public')->path($this->product->image_path));
-            // Limit main image size to 2000px width for performance while keeping quality
-            if ($mainImg->width() > 2000) {
-                $mainImg->scale(width: 2000);
-            }
-        } else {
-            // Placeholder if image not found
-            $mainImg = $manager->create(1062, 1062)->fill('eeeeee');
-        }
+        $infoBox->text("ID: " . $this->product->product_id, 15, 140, function($font) use ($fontExists, $fontFile) {
+            if ($fontExists) $font->file($fontFile);
+            $font->size(18);
+            $font->color('000000');
+        });
 
-        // Combine Header and Main Image
-        $finalWidth = max($mainImg->width(), $headerWidth);
-        $finalHeight = $mainImg->height() + $headerHeight;
+        $infoBox->text("Qty: " . $this->product->quantity, 15, 200, function($font) use ($fontExists, $fontFile) {
+            if ($fontExists) $font->file($fontFile);
+            $font->size(45);
+            $font->color('000000');
+        });
+
+        // Create Final Canvas
+        // Width stays the same as product image, height increases by 3cm
+        $finalWidth = $imgWidth;
+        $finalHeight = $imgHeight + $headerAreaHeight;
 
         $canvas = $manager->create($finalWidth, $finalHeight)->fill('ffffff');
-        // Place information header on the top-right
-        $canvas->place($header, 'top-right');
-        // Place main product image below the header
-        $canvas->place($mainImg, 'top-left', 0, $headerHeight);
+
+        // Place Info Box in the header area
+        // If image is wider than 9cm, we can center it or put it on the left
+        // Based on "output jadi 28x53", we'll center the 9cm box in the 28cm header
+        $canvas->place($infoBox, 'top-center', 0, round(0.25 * $pxPerCm)); // 0.25cm padding from top
+
+        // Place Main Product Image below the header area
+        $canvas->place($mainImg, 'top-left', 0, $headerAreaHeight);
 
         // Save Merged Image
         $fileName = 'merged_' . $this->product->id . '_' . time() . '.png';
