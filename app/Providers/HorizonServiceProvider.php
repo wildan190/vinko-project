@@ -15,9 +15,10 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
-        // Horizon::routeSmsNotificationsTo('15556667777');
-        // Horizon::routeMailNotificationsTo('example@example.com');
-        // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
+        // Bypass keamanan: Mengizinkan akses ke dashboard tanpa login/session
+        Horizon::auth(function ($request) {
+            return true;
+        });
     }
 
     /**
@@ -28,7 +29,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user = null) {
-            // Dipaksa true agar kamu bisa masuk dan memantau antrian gambar
+            // Selalu izinkan akses
             return true;
         });
     }
