@@ -8,7 +8,8 @@ Pastikan server Anda memenuhi spesifikasi berikut sebelum melakukan instalasi:
 
 *   **PHP 8.2+**
 *   **Ekstensi PHP Wajib**:
-    *   `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pcre`, `tokenizer`, `xml`, `gd` (Wajib untuk pemrosesan gambar).
+    *   `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pcre`, `tokenizer`, `xml`.
+    *   `gd` atau `imagick` (Disarankan **GD** untuk performa standar, atau **Imagick** untuk kualitas pemrosesan gambar yang lebih tinggi).
 *   **Composer** (PHP dependency manager).
 *   **Node.js 18+** & **npm** (untuk kompilasi aset frontend).
 *   **Database**: MySQL 8.0+ atau MariaDB 10.4+.
