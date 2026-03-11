@@ -14,6 +14,14 @@
                     Swal.fire({ title: 'Error!', text: "{{ session('error') }}", icon: 'error', confirmButtonColor: '#d33' });
                 @endif
 
+                let activeXHR = null;
+
+                window.addEventListener('beforeunload', function (e) {
+                    if (activeXHR) {
+                        activeXHR.abort(); // Cancel active upload on reload
+                    }
+                });
+
                 // AJAX Upload helper function
                 function uploadFile(file, action, progressBar, progressContainer) {
                     const formData = new FormData();
@@ -22,7 +30,31 @@
                     
                     progressContainer.classList.remove('hidden');
                     
+                    // Show a global "Uploading..." state with cancel button
+                    Swal.fire({
+                        title: 'Uploading...',
+                        text: 'Please wait until the upload is complete.',
+                        allowOutsideClick: false,
+                        showCancelButton: true,
+                        cancelButtonText: 'Cancel Upload',
+                        cancelButtonColor: '#d33',
+                        showConfirmButton: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    }).then((result) => {
+                        if (result.dismiss === Swal.DismissReason.cancel) {
+                            if (activeXHR) {
+                                activeXHR.abort();
+                                activeXHR = null;
+                                progressContainer.classList.add('hidden');
+                                progressBar.style.width = '0%';
+                                Swal.fire('Cancelled', 'Upload cancelled by user.', 'info');
+                            }
+                        }
+                    });
+                    
                     const xhr = new XMLHttpRequest();
+                    activeXHR = xhr; // Track active XHR
+                    
                     xhr.open('POST', action, true);
                     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
@@ -34,6 +66,7 @@
                     };
 
                     xhr.onload = function() {
+                        activeXHR = null; // Clear active XHR
                         if (xhr.status === 200) {
                             Swal.fire({
                                 title: 'Uploaded!',
@@ -47,6 +80,14 @@
                         } else {
                             Swal.fire('Error!', 'Upload failed.', 'error');
                         }
+                    };
+                    
+                    xhr.onerror = function() {
+                        activeXHR = null;
+                    };
+
+                    xhr.onabort = function() {
+                        activeXHR = null;
                     };
                     
                     xhr.send(formData);
