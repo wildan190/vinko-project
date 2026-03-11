@@ -1,5 +1,4 @@
 services:
-  # PHP-FPM Service
   app:
     build: .
     container_name: vinko-app
@@ -9,18 +8,29 @@ services:
     environment:
       APP_URL: "https://baimo-tupipei.online"
 
-  # Nginx Service (Internal Docker)
   web:
     image: nginx:alpine
     container_name: vinko-web
     restart: always
     ports:
-      - "9000:80" # Port 9000 VPS ke Port 80 Nginx Docker
+      - "9000:80"
     volumes:
       - .:/app
       - ./nginx-conf/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
+
+  # Tambahkan Horizon Service
+  horizon:
+    build: .
+    container_name: vinko-horizon
+    restart: always
+    volumes:
+      - .:/app
+    command: php artisan horizon
+    depends_on:
+      - app
+      - redis
 
   db:
     image: postgres:15-alpine

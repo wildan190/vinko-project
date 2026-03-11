@@ -1,8 +1,22 @@
 FROM php:8.4-fpm-alpine
 
-# Install system dependencies & PHP extensions
-RUN apk add --no-cache bash libpng-dev libzip-dev icu-dev libpq-dev
-RUN docker-php-ext-install bcmath gd intl zip pdo_pgsql
+# Install system dependencies
+RUN apk add --no-cache \
+    bash \
+    libpng-dev \
+    libzip-dev \
+    icu-dev \
+    libpq-dev \
+    autoconf \
+    gcc \
+    g++ \
+    make
+
+# Install PHP extensions (Tambahkan pcntl di sini)
+RUN docker-php-ext-install bcmath gd intl zip pdo_pgsql pcntl
+
+# Install Redis extension (Penting untuk Horizon)
+RUN pecl install redis && docker-php-ext-enable redis
 
 # Copy Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
