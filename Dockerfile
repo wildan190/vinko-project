@@ -1,9 +1,9 @@
-FROM dunglas/frankenphp:latest-php8.4-alpine
+FROM dunglas/frankenphp:php8.4-alpine
 
-# Install system dependencies
+# Install tool pendukung
 RUN apk add --no-cache bash
 
-# Install PHP extensions lengkap sesuai permintaan
+# Install PHP extensions
 RUN install-php-extensions \
     bcmath \
     gd \
@@ -17,10 +17,9 @@ RUN install-php-extensions \
     xml \
     fileinfo
 
-# Copy Composer dari image resmi
+# Copy Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Set permission dasar
 RUN mkdir -p storage bootstrap/cache
