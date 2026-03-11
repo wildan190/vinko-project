@@ -11,12 +11,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 
 class ProcessImageUploadJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 3;
+    public $timeout = 600;
     protected $product;
     protected $tempPath;
 
@@ -34,6 +36,9 @@ class ProcessImageUploadJob implements ShouldQueue
      */
     public function handle(): void
     {
+        ini_set("memory_limit", "-1");
+        set_time_limit(600);
+
         if ($this->batch() && $this->batch()->cancelled()) {
             return;
         }
@@ -55,9 +60,9 @@ class ProcessImageUploadJob implements ShouldQueue
         Storage::disk('public')->move($this->tempPath, $finalPath);
         
         try {
-            $manager = new ImageManager(new GdDriver());
-            $imageContent = Storage::disk('public')->get($finalPath);
-            $thumbnail = $manager->read($imageContent);
+            $manager = new ImageManager(new ImagickDriver());
+            // Using path() instead of get() for memory efficiency with large files
+            $thumbnail = $manager->read(Storage::disk('public')->path($finalPath));
             $thumbnail->scale(width: 200);
             
             if (!Storage::disk('public')->exists('thumbnails')) {

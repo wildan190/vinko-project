@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 
 class ProductExportController extends Controller
 {
@@ -126,8 +126,8 @@ class ProductExportController extends Controller
         $path = $file->store('product_images', 'public');
         
         try {
-            $manager = new ImageManager(new GdDriver());
-            $thumbnail = $manager->read($file);
+            $manager = new ImageManager(new ImagickDriver());
+            $thumbnail = $manager->read(Storage::disk('public')->path($path));
             $thumbnail->scale(width: 200);
             
             if (!Storage::disk('public')->exists('thumbnails')) {
@@ -143,12 +143,26 @@ class ProductExportController extends Controller
         $product->update(['image_path' => $path]);
     }
 
-    public function processMerge()
+    public function processMerge(Request $request)
     {
-        $products = ProductExport::whereNotNull('image_path')->get();
+        $selectedIds = $request->input('ids', []);
+
+        $query = ProductExport::whereNotNull('image_path')
+            ->where('image_path', 'not like', '=_xlfn%');
+
+        if (!empty($selectedIds)) {
+            $query->whereIn('id', $selectedIds);
+        }
+
+        $products = $query->get()->filter(function ($product) {
+            return Storage::disk('public')->exists($product->image_path);
+        });
 
         if ($products->isEmpty()) {
-            return response()->json(['error' => 'No products with images found.'], 400);
+            $message = !empty($selectedIds) 
+                ? 'Selected products have no valid images or images have not been uploaded.' 
+                : 'No products with valid uploaded images found.';
+            return response()->json(['error' => $message], 400);
         }
 
         $jobs = $products->map(function ($product) {

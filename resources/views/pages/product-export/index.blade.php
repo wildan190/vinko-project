@@ -415,26 +415,35 @@
                     }
                 }
 
-                // Select All & Bulk Delete Logic
+                // Select All & Bulk Actions Logic
                 const selectAll = document.getElementById('select-all');
                 const checkboxes = document.querySelectorAll('.product-checkbox');
                 const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
+                const mergeSelectedBtn = document.getElementById('btn-merge-selected');
                 const selectedCountLabel = document.getElementById('selected-count');
+                const mergeSelectedCountSpan = document.getElementById('merge-selected-count');
 
                 function updateBulkActions() {
-                    const selected = document.querySelectorAll('.product-checkbox:checked').length;
-                    selectedCountLabel.innerText = selected;
-                    if (selected > 0) {
-                        bulkDeleteBtn.classList.remove('hidden');
+                    const count = document.querySelectorAll('.product-checkbox:checked').length;
+                    
+                    if (selectedCountLabel) selectedCountLabel.innerText = count;
+                    if (mergeSelectedCountSpan) mergeSelectedCountSpan.innerText = count;
+
+                    if (count > 0) {
+                        if (bulkDeleteBtn) bulkDeleteBtn.classList.remove('hidden');
+                        if (mergeSelectedBtn) mergeSelectedBtn.classList.remove('hidden');
                     } else {
-                        bulkDeleteBtn.classList.add('hidden');
+                        if (bulkDeleteBtn) bulkDeleteBtn.classList.add('hidden');
+                        if (mergeSelectedBtn) mergeSelectedBtn.classList.add('hidden');
                     }
                 }
 
                 if (selectAll) {
                     selectAll.addEventListener('change', function() {
                         checkboxes.forEach(cb => {
-                            cb.checked = this.checked;
+                            if (!cb.disabled) {
+                                cb.checked = this.checked;
+                            }
                         });
                         updateBulkActions();
                     });
@@ -443,6 +452,71 @@
                 checkboxes.forEach(cb => {
                     cb.addEventListener('change', updateBulkActions);
                 });
+
+                if (mergeSelectedBtn) {
+                    mergeSelectedBtn.addEventListener('click', async function() {
+                        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+                            .map(cb => cb.value);
+
+                        if (selectedIds.length === 0) return;
+
+                        try {
+                            const response = await fetch('{{ route('product-export.process') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({ ids: selectedIds })
+                            });
+                            
+                            const data = await response.json();
+                            if (!response.ok) throw new Error(data.error || 'Failed to start process');
+
+                            const batchId = data.batchId;
+                            const total = data.total;
+                            
+                            Swal.fire({
+                                title: 'Merging Selected Images...',
+                                html: `
+                                    <div class="mb-2 text-sm">Processing <span id="processed-count">0</span> of ${total} images</div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                        <div id="merge-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                `,
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
+
+                            const interval = setInterval(async () => {
+                                const statusResponse = await fetch(`/product-export/batch-status/${batchId}`);
+                                const batch = await statusResponse.json();
+
+                                if (batch) {
+                                    const processed = batch.processedJobs;
+                                    const progress = batch.progress;
+                                    
+                                    const progressBar = document.getElementById('merge-progress-bar');
+                                    if (progressBar) progressBar.style.width = progress + '%';
+                                    const countLabel = document.getElementById('processed-count');
+                                    if (countLabel) countLabel.innerText = processed;
+
+                                    if (batch.finishedAt) {
+                                        clearInterval(interval);
+                                        Swal.fire({ title: 'Success!', text: 'Selected images merged successfully.', icon: 'success' })
+                                            .then(() => window.location.reload());
+                                    }
+                                }
+                            }, 2000);
+
+                        } catch (error) {
+                            Swal.fire('Error!', error.message, 'error');
+                        }
+                    });
+                }
 
                 if (bulkDeleteBtn) {
                     bulkDeleteBtn.addEventListener('click', function() {
@@ -535,6 +609,11 @@
                     <a href="{{ route('product-export.export') }}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export All Data</a>
                     
                     <button type="button" id="btn-process-merge" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 focus:outline-none dark:focus:ring-purple-800">Process Merge Images</button>
+                    
+                    <button type="button" id="btn-merge-selected" class="hidden text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none dark:focus:ring-indigo-800 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Merge Selected (<span id="merge-selected-count">0</span>)
+                    </button>
 
                     <button type="button" id="btn-bulk-delete" class="hidden text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-500 dark:hover:bg-red-600 focus:outline-none dark:focus:ring-red-800 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -562,6 +641,11 @@
                     <tbody>
                         @php $lastOrderNumber = null; @endphp
                         @forelse($products as $product)
+                            @php 
+                                $hasValidImage = $product->image_path && 
+                                                 !str_starts_with($product->image_path, '=_xlfn') && 
+                                                 Storage::disk('public')->exists($product->image_path);
+                            @endphp
                             @if($lastOrderNumber !== $product->order_number)
                                 <tr class="bg-gray-50 dark:bg-gray-700/50">
                                     <td colspan="6" class="px-6 py-2 border-y border-gray-200 dark:border-gray-600">
@@ -575,9 +659,11 @@
                                 </tr>
                                 @php $lastOrderNumber = $product->order_number; @endphp
                             @endif
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors {{ $hasValidImage ? '' : 'bg-gray-50/50 dark:bg-gray-800/50' }}">
                                 <td class="px-4 py-4">
-                                    <input type="checkbox" name="ids[]" value="{{ $product->id }}" class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                    <input type="checkbox" name="ids[]" value="{{ $product->id }}" 
+                                        class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 {{ $hasValidImage ? '' : 'cursor-not-allowed' }}"
+                                        {{ $hasValidImage ? '' : 'disabled' }}>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
@@ -678,25 +764,9 @@
                             </tr>
                         @empty
                             <tr>
-                                <!-- <td colspan="5" class="px-6 py-4 text-center text-gray-400 italic">No data available.</td> -->
-                            <td class="px-6 py-4 text-center">
-    @if(isset($product) && $product->merged_image)
-        @php
-            // Cek apakah thumbnail ada, jika tidak pakai gambar asli
-            $thumbPath = 'thumbnails/merged/' . basename($product->merged_image);
-            $displayImage = \Storage::disk('public')->exists($thumbPath) 
-                            ? asset('storage/' . $thumbPath) 
-                            : asset('storage/' . $product->merged_image);
-        @endphp
-        <a href="{{ asset('storage/' . $product->merged_image) }}" target="_blank">
-            <img src="{{ $displayImage }}" 
-                 class="w-16 h-16 object-cover rounded border border-purple-200 mx-auto" 
-                 loading="lazy">
-        </a>
-    @else
-        <span class="text-gray-300 italic text-xs">Not Merged</span>
-    @endif
-</td>
+                                <td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">
+                                    No data available.
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
