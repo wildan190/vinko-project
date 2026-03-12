@@ -3,54 +3,42 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductExport;
-use App\Imports\ProductExportImport;
-use App\Exports\ProductExportExport;
-use App\Jobs\MergeProductImageJob;
-use App\Jobs\ProcessImageUploadJob;
-use App\Jobs\ImportProductRowJob;
+use App\Services\ProductExportService;
+use App\Http\Requests\ProductExport\ImportRequest;
+use App\Http\Requests\ProductExport\UploadImageRequest;
+use App\Http\Requests\ProductExport\BulkDeleteRequest;
+use App\Http\Requests\ProductExport\ProcessMergeRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
+use App\Exports\ProductExportExport;
 
 class ProductExportController extends Controller
 {
+    protected $service;
+
+    public function __construct(ProductExportService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index()
     {
         $products = ProductExport::orderBy('order_number', 'asc')
             ->orderBy('id', 'asc')
-            ->paginate(20); // Increased pagination for better grouping view
+            ->paginate(20);
         return view('pages.product-export.index', compact('products'), ['title' => 'Product Export Management']);
     }
 
-    public function import(Request $request)
+    public function import(ImportRequest $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $result = $this->service->importFromExcel($request->file('file'));
 
-        $data = Excel::toArray(new ProductExportImport, $request->file('file'));
-        $rows = $data[0] ?? [];
-
-        if (empty($rows)) {
-            return response()->json(['error' => 'The uploaded file is empty.'], 400);
+        if (isset($result['error'])) {
+            return response()->json(['error' => $result['error']], 400);
         }
 
-        $jobs = [];
-        foreach ($rows as $row) {
-            $jobs[] = new ImportProductRowJob($row);
-        }
-
-        $batch = Bus::batch($jobs)->name('Excel Data Import')->dispatch();
-
-        return response()->json([
-            'success' => true,
-            'batchId' => $batch->id,
-            'total' => count($rows)
-        ]);
+        return response()->json($result);
     }
 
     public function export()
@@ -60,126 +48,29 @@ class ProductExportController extends Controller
 
     public function exportTemplate()
     {
-        // Export an empty collection to just get the headings
         return Excel::download(new class extends ProductExportExport {
             public function collection() { return collect(); }
         }, 'product_export_template.xlsx');
     }
 
-    public function uploadImage(Request $request, ProductExport $product)
+    public function uploadImage(UploadImageRequest $request, ProductExport $product)
     {
-        $request->validate([
-            'image' => 'required|image|max:512000', 
-        ]);
-
-        $this->processSingleImage($product, $request->file('image'));
-
-        return response()->json(['success' => true]);
-    }
-
-    public function bulkUpload(Request $request)
-    {
-        $request->validate([
-            'images.*' => 'required|image|max:512000',
-        ]);
-
-        $files = $request->file('images');
-        $successCount = 0;
-        $jobs = [];
-
-        foreach ($files as $file) {
-            $originalName = $file->getClientOriginalName();
-            $sku = pathinfo($originalName, PATHINFO_FILENAME);
-
-            $product = ProductExport::where('sku_platform', $sku)
-                ->orWhere('order_number', $sku)
-                ->first();
-
-            if ($product) {
-                // Store file temporarily to be processed by job
-                $path = $file->store('temp_uploads', 'public');
-                $jobs[] = new ProcessImageUploadJob($product, $path);
-                $successCount++;
-            }
-        }
-
-        if (empty($jobs)) {
-            return response()->json(['error' => 'No matching products found for these images.'], 400);
-        }
-
-        $batch = Bus::batch($jobs)->name('Bulk Image Upload')->dispatch();
-
+        $product = $this->service->processSingleImage($product, $request->file('image'));
         return response()->json([
             'success' => true,
-            'batchId' => $batch->id,
-            'message' => "Starting background processing for $successCount images."
+            'product' => $this->service->transformProduct($product)
         ]);
     }
 
-    private function processSingleImage($product, $file)
+    public function processMerge(ProcessMergeRequest $request)
     {
-        // Cleanup old images and merged results
-        $this->deleteProductImages($product);
+        $result = $this->service->startMergeProcess($request->input('ids', []));
 
-        $path = $file->store('product_images', 'public');
-        
-        try {
-            $manager = new ImageManager(new ImagickDriver());
-            $thumbnail = $manager->read(Storage::disk('public')->path($path));
-            $thumbnail->scale(width: 200);
-            
-            if (!Storage::disk('public')->exists('thumbnails')) {
-                Storage::disk('public')->makeDirectory('thumbnails');
-            }
-            
-            $thumbnailPath = 'thumbnails/' . basename($path);
-            $thumbnail->toPng()->save(Storage::disk('public')->path($thumbnailPath));
-        } catch (\Exception $e) {
-            // Log or handle error
+        if (isset($result['error'])) {
+            return response()->json(['error' => $result['error']], 400);
         }
 
-        $product->update([
-            'image_path' => $path,
-            'merged_image' => null // Reset merged status
-        ]);
-    }
-
-    public function processMerge(Request $request)
-    {
-        $selectedIds = $request->input('ids', []);
-
-        $query = ProductExport::whereNotNull('image_path')
-            ->where('image_path', 'not like', '=_xlfn%');
-
-        if (!empty($selectedIds)) {
-            // If user explicitly selected items, allow re-merge
-            $query->whereIn('id', $selectedIds);
-        } else {
-            // Default "Merge All": only skip those that are already merged
-            $query->whereNull('merged_image');
-        }
-
-        $products = $query->get()->filter(function ($product) {
-            return Storage::disk('public')->exists($product->image_path);
-        });
-
-        if ($products->isEmpty()) {
-            $message = !empty($selectedIds) 
-                ? 'Selected products have no valid images or images have not been uploaded.' 
-                : 'No new products with valid uploaded images found to merge.';
-            return response()->json(['error' => $message], 400);
-        }
-
-        $jobs = $products->map(function ($product) {
-            return new MergeProductImageJob($product);
-        });
-
-        $batch = Bus::batch($jobs)->name('Merge Product Images')->dispatch();
-
-        return response()->json([
-            'batchId' => $batch->id,
-            'total' => $products->count()
-        ]);
+        return response()->json($result);
     }
 
     public function getBatchStatus($batchId)
@@ -187,39 +78,48 @@ class ProductExportController extends Controller
         return Bus::findBatch($batchId);
     }
 
+    public function data(Request $request)
+    {
+        $products = ProductExport::orderBy('order_number', 'asc')
+            ->orderBy('id', 'asc')
+            ->paginate(20);
+
+        $products->getCollection()->transform(fn($product) => $this->service->transformProduct($product));
+
+        return response()->json($products);
+    }
+
     public function destroy(ProductExport $product)
     {
-        $this->deleteProductImages($product);
+        $this->service->deleteProductImages($product);
         $product->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Record deleted successfully.']);
+        }
 
         return back()->with('success', 'Record and all associated images deleted successfully.');
     }
 
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkDeleteRequest $request)
     {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return response()->json(['error' => 'No items selected.'], 400);
+        $result = $this->service->bulkDelete($request->input('ids', []));
+
+        if (isset($result['error'])) {
+            return response()->json(['error' => $result['error']], 400);
         }
 
-        $products = ProductExport::whereIn('id', $ids)->get();
-        foreach ($products as $product) {
-            $this->deleteProductImages($product);
-            $product->delete();
-        }
-
-        return response()->json(['success' => true, 'message' => count($ids) . ' items deleted successfully.']);
+        return response()->json($result);
     }
 
-    private function deleteProductImages(ProductExport $product)
+    public function downloadMerged(Request $request)
     {
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
-            Storage::disk('public')->delete('thumbnails/' . basename($product->image_path));
+        $result = $this->service->generateMergedZip($request->input('ids'));
+
+        if (isset($result['error'])) {
+            return back()->with('error', $result['error']);
         }
-        if ($product->merged_image) {
-            Storage::disk('public')->delete($product->merged_image);
-            Storage::disk('public')->delete('thumbnails/merged/' . basename($product->merged_image));
-        }
+
+        return response()->download($result['file'], $result['name'])->deleteFileAfterSend(true);
     }
 }

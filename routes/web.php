@@ -31,6 +31,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/merge-single/{product}', [ProductExportController::class, 'mergeSingle'])->name('merge-single');
         Route::delete('/destroy/{product}', [ProductExportController::class, 'destroy'])->name('destroy');
         Route::post('/bulk-delete', [ProductExportController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::get('/data', [ProductExportController::class, 'data'])->name('data'); // API endpoint for AJAX
+        Route::get('/download-merged', [ProductExportController::class, 'downloadMerged'])->name('download-merged');
     });
 
     // profile pages

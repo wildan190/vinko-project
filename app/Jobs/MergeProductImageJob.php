@@ -107,8 +107,12 @@ class MergeProductImageJob implements ShouldQueue
         });
 
         // Merge canvas
-        $canvas = $manager->create($mainImg->width(), $mainImg->height() + $headH)->fill("ffffff");
+        $canvas = $manager->create($mainImg->width(), $mainImg->height() + $headH);
         
+        // Fill header area with white (details background should not be transparent)
+        $headerBg = $manager->create($mainImg->width(), $headH)->fill("ffffff");
+        $canvas->place($headerBg, "top-left", 0, 0);
+
         $paddingRight = round(0.25 * $pxPerCm * $scaleFactor);
         $paddingTop = round(0.25 * $pxPerCm * $scaleFactor);
         
@@ -126,7 +130,8 @@ class MergeProductImageJob implements ShouldQueue
             Storage::disk("public")->makeDirectory("merged_images");
         }
 
-        // Save original high-res image
+        // Save original high-res image with 300 DPI
+        $canvas->core()->native()->setImageResolution(300, 300);
         $canvas->toPng()->save(Storage::disk("public")->path($path));
 
         // Create Thumbnail for UI performance
