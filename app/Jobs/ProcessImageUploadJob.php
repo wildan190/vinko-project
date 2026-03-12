@@ -52,6 +52,12 @@ class ProcessImageUploadJob implements ShouldQueue
             Storage::disk('public')->delete($this->product->image_path);
             Storage::disk('public')->delete('thumbnails/' . basename($this->product->image_path));
         }
+        
+        // Also cleanup merged images if any
+        if ($this->product->merged_image) {
+            Storage::disk('public')->delete($this->product->merged_image);
+            Storage::disk('public')->delete('thumbnails/merged/' . basename($this->product->merged_image));
+        }
 
         $fileName = basename($this->tempPath);
         $finalPath = 'product_images/' . $fileName;
@@ -75,6 +81,9 @@ class ProcessImageUploadJob implements ShouldQueue
             // Error handling
         }
 
-        $this->product->update(['image_path' => $finalPath]);
+        $this->product->update([
+            'image_path' => $finalPath,
+            'merged_image' => null // Reset merged status
+        ]);
     }
 }

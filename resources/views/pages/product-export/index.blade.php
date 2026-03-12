@@ -165,7 +165,7 @@
 
                     try {
                         const response = await fetch('{{ route('product-export.process') }}', {
-                            method: 'POST', // Fixed typo: replaced 'route' with 'method'
+                            method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -439,9 +439,10 @@
                     const checkedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
                     const count = checkedCheckboxes.length;
                     
-                    // Count how many of the selected can actually be merged (valid and not merged yet)
+                    // Count how many of the selected can be merged (must have valid image)
+                    // We allow re-merge, so we don't check dataset.merged === '0' here
                     const mergeableCount = Array.from(checkedCheckboxes).filter(cb => 
-                        cb.dataset.valid === '1' && cb.dataset.merged === '0'
+                        cb.dataset.valid === '1'
                     ).length;
                     
                     if (selectedCountLabel) selectedCountLabel.innerText = count;
@@ -462,13 +463,27 @@
 
                 if (selectAll) {
                     selectAll.addEventListener('change', function() {
-                        const checkboxes = document.querySelectorAll('.product-checkbox');
-                        checkboxes.forEach(cb => {
+                        const allCheckboxes = document.querySelectorAll('.product-checkbox, .group-checkbox');
+                        allCheckboxes.forEach(cb => {
                             cb.checked = this.checked;
                         });
                         updateBulkActions();
                     });
                 }
+
+                // Group checkbox logic
+                document.querySelectorAll('.group-checkbox').forEach(groupCb => {
+                    groupCb.addEventListener('change', function() {
+                        const tr = this.closest('tr');
+                        let nextTr = tr.nextElementSibling;
+                        while (nextTr && !nextTr.querySelector('.group-checkbox')) {
+                            const cb = nextTr.querySelector('.product-checkbox');
+                            if (cb) cb.checked = this.checked;
+                            nextTr = nextTr.nextElementSibling;
+                        }
+                        updateBulkActions();
+                    });
+                });
 
                 // Delegate checkbox change events
                 document.addEventListener('change', function(e) {
@@ -480,6 +495,7 @@
                 if (mergeSelectedBtn) {
                     mergeSelectedBtn.addEventListener('click', function() {
                         const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+                            .filter(cb => cb.dataset.valid === '1')
                             .map(cb => cb.value);
 
                         if (selectedIds.length > 0) {
@@ -599,7 +615,7 @@
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" class="px-4 py-3 w-10">
-                                <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer">
                             </th>
                             <th scope="col" class="px-6 py-3 min-w-[280px]">Product Information</th>
                             <th scope="col" class="px-6 py-3">Unggah Gambar</th>
@@ -625,7 +641,7 @@
                                     <td colspan="9" class="px-4 py-2">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-4">
-                                                <input type="checkbox" class="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                                <input type="checkbox" class="group-checkbox w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 cursor-pointer">
                                                 <span class="text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer">#{{ $product->order_number }}</span>
                                             </div>
                                             <div class="flex items-center gap-6 text-[10px] text-gray-500 font-medium">
@@ -643,7 +659,7 @@
                                     <input type="checkbox" name="ids[]" value="{{ $product->id }}" 
                                         data-merged="{{ $isAlreadyMerged ? '1' : '0' }}"
                                         data-valid="{{ $hasValidImage ? '1' : '0' }}"
-                                        class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                        class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer">
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex gap-3">

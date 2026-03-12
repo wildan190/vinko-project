@@ -118,10 +118,8 @@ class ProductExportController extends Controller
 
     private function processSingleImage($product, $file)
     {
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
-            Storage::disk('public')->delete('thumbnails/' . basename($product->image_path));
-        }
+        // Cleanup old images and merged results
+        $this->deleteProductImages($product);
 
         $path = $file->store('product_images', 'public');
         
@@ -140,7 +138,10 @@ class ProductExportController extends Controller
             // Log or handle error
         }
 
-        $product->update(['image_path' => $path]);
+        $product->update([
+            'image_path' => $path,
+            'merged_image' => null // Reset merged status
+        ]);
     }
 
     public function processMerge(Request $request)
@@ -148,11 +149,14 @@ class ProductExportController extends Controller
         $selectedIds = $request->input('ids', []);
 
         $query = ProductExport::whereNotNull('image_path')
-            ->where('image_path', 'not like', '=_xlfn%')
-            ->whereNull('merged_image'); // Always skip already merged products
+            ->where('image_path', 'not like', '=_xlfn%');
 
         if (!empty($selectedIds)) {
+            // If user explicitly selected items, allow re-merge
             $query->whereIn('id', $selectedIds);
+        } else {
+            // Default "Merge All": only skip those that are already merged
+            $query->whereNull('merged_image');
         }
 
         $products = $query->get()->filter(function ($product) {
