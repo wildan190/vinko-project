@@ -49,6 +49,20 @@ class MergeProductImageJob implements ShouldQueue
 
         $info = $manager->create($boxW, $boxH)->fill("ffffff");
         
+        // Add Original Product Image from URL if exists (Left side of QR)
+        if ($this->product->product_image_url) {
+            try {
+                $originalImg = $manager->read(file_get_contents($this->product->product_image_url));
+                $originalImg->cover(round(240 * $scaleFactor), round(240 * $scaleFactor));
+                // Place original image to the left of where QR will be
+                // QR is at right:10, so original image will be at right: (10 + QR_SIZE + 10)
+                $offsetRight = round((10 + 240 + 10) * $scaleFactor);
+                $info->place($originalImg, "right", $offsetRight);
+            } catch (\Exception $e) {
+                // Skip if image cannot be loaded
+            }
+        }
+
         $qrData = QrCode::format("png")
             ->size(round(240 * $scaleFactor))
             ->margin(1)
@@ -63,16 +77,16 @@ class MergeProductImageJob implements ShouldQueue
         $fEx = file_exists($font);
         $pL = round(15 * $scaleFactor);
 
-        // Text details
-        $info->text("NO. PESANAN: " . $this->product->order_number, $pL, round(35 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
+        // Text details - Increased font sizes
+        $info->text("NO. PESANAN: " . $this->product->order_number, $pL, round(45 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
             if($fEx) $f->file($font);
-            $f->size(round(22 * $scaleFactor));
+            $f->size(round(32 * $scaleFactor));
             $f->color("000000");
         });
 
-        $info->text("SKU: " . $this->product->sku_platform, $pL, round(70 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
+        $info->text("SKU: " . $this->product->sku_platform, $pL, round(95 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
             if($fEx) $f->file($font);
-            $f->size(round(22 * $scaleFactor));
+            $f->size(round(32 * $scaleFactor));
             $f->color("000000");
         });
 
@@ -80,15 +94,15 @@ class MergeProductImageJob implements ShouldQueue
             ? substr($this->product->product_specification, 0, 42) . "..." 
             : $this->product->product_specification;
             
-        $info->text("SPEC: " . $spec, $pL, round(105 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
+        $info->text("SPEC: " . $spec, $pL, round(145 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
             if($fEx) $f->file($font);
-            $f->size(round(18 * $scaleFactor));
+            $f->size(round(26 * $scaleFactor));
             $f->color("000000");
         });
 
-        $info->text("Qty: " . $this->product->quantity, $pL, round(200 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
+        $info->text("Qty: " . $this->product->quantity, $pL, round(220 * $scaleFactor), function($f) use ($fEx, $font, $scaleFactor) {
             if($fEx) $f->file($font);
-            $f->size(round(45 * $scaleFactor));
+            $f->size(round(60 * $scaleFactor));
             $f->color("000000");
         });
 
