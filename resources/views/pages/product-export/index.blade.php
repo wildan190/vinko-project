@@ -552,45 +552,45 @@
             }
         </script>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <x-common.component-card title="Import Data">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-center w-full">
-                        <label for="file_input" id="excel-drop-zone" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 transition-all group">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2l2 2"/>
-                                </svg>
-                                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Import Excel</span></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Drop file or click here</p>
-                            </div>
-                            <input id="file_input" type="file" class="hidden" accept=".xlsx,.xls,.csv" />
-                        </label>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-[10px] text-gray-400 italic">*Data akan diproses secara otomatis setelah file dipilih atau di-drop</p>
-                    </div>
-                </div>
-            </x-common.component-card>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white">Product List</h2>
+                <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">{{ $products->total() }} Total</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                <!-- Import Excel Hidden Input -->
+                <input id="file_input" type="file" class="hidden" accept=".xlsx,.xls,.csv" />
+                
+                <button type="button" onclick="document.getElementById('file_input').click()" class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Import Excel
+                </button>
 
-            <x-common.component-card title="Actions">
-                <div class="flex flex-wrap gap-4 items-center">
-                    <a href="{{ route('product-export.export-template') }}" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">Download Template</a>
-                    <a href="{{ route('product-export.export') }}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export All Data</a>
-                    
-                    <button type="button" id="btn-process-merge" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 focus:outline-none dark:focus:ring-purple-800">Process Merge Images</button>
-                    
-                    <button type="button" id="btn-merge-selected" class="hidden text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none dark:focus:ring-indigo-800 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Merge Selected (<span id="merge-selected-count">0</span>)
-                    </button>
+                <a href="{{ route('product-export.export-template') }}" class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-xs">
+                    Template
+                </a>
 
-                    <button type="button" id="btn-bulk-delete" class="hidden text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-500 dark:hover:bg-red-600 focus:outline-none dark:focus:ring-red-800 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        Delete Selected (<span id="selected-count">0</span>)
-                    </button>
-                </div>
-            </x-common.component-card>
+                <a href="{{ route('product-export.export') }}" class="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-xs">
+                    Export All
+                </a>
+
+                <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+                <button type="button" id="btn-process-merge" class="inline-flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-xs font-semibold text-white transition-colors shadow-sm">
+                    Merge All
+                </button>
+                
+                <button type="button" id="btn-merge-selected" class="hidden inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-semibold text-white transition-colors shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Merge Selected (<span id="merge-selected-count">0</span>)
+                </button>
+
+                <button type="button" id="btn-bulk-delete" class="hidden inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-xs font-semibold text-white transition-colors shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Delete (<span id="selected-count">0</span>)
+                </button>
+            </div>
         </div>
 
         <x-common.component-card title="Product List">
@@ -601,11 +601,14 @@
                             <th scope="col" class="px-4 py-3 w-10">
                                 <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                             </th>
-                            <th scope="col" class="px-6 py-3">Product Information</th>
-                            <th scope="col" class="px-6 py-3">Order Details</th>
-                            <th scope="col" class="px-6 py-3">Gambar</th>
+                            <th scope="col" class="px-6 py-3 min-w-[280px]">Product Information</th>
+                            <th scope="col" class="px-6 py-3">Unggah Gambar</th>
+                            <th scope="col" class="px-6 py-3">Order number</th>
+                            <th scope="col" class="px-6 py-3">time</th>
+                            <th scope="col" class="px-6 py-3">Logistics methods</th>
                             <th scope="col" class="px-6 py-3">Merged Image</th>
-                            <th scope="col" class="px-6 py-3 text-right">Action</th>
+                            <th scope="col" class="px-6 py-3">state</th>
+                            <th scope="col" class="px-6 py-3 text-right">operate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -618,13 +621,18 @@
                                 $isAlreadyMerged = (bool)$product->merged_image;
                             @endphp
                             @if($lastOrderNumber !== $product->order_number)
-                                <tr class="bg-gray-50 dark:bg-gray-700/50">
-                                    <td colspan="6" class="px-6 py-2 border-y border-gray-200 dark:border-gray-600">
+                                <tr class="bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+                                    <td colspan="9" class="px-4 py-2">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-4">
-                                                <span class="font-bold text-blue-600 dark:text-blue-400">#{{ $product->order_number }}</span>
+                                                <input type="checkbox" class="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                                <span class="text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer">#{{ $product->order_number }}</span>
                                             </div>
-                                            <span class="text-xs text-gray-500 uppercase">Payment: Cash on delivery</span>
+                                            <div class="flex items-center gap-6 text-[10px] text-gray-500 font-medium">
+                                                <span>Payment: Cash on delivery</span>
+                                                <span>Buyer's designation: Economical</span>
+                                                <span class="text-gray-400">TikTok: TQ01-ID</span>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -638,40 +646,23 @@
                                         class="product-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex flex-col">
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $product->sku_platform }}</span>
-                                        <span class="text-xs text-gray-500 mt-1">{{ $product->product_specification }}</span>
-                                        <div class="flex gap-2 mt-1">
-                                            <span class="text-[10px] text-gray-400">ID Produk: {{ $product->product_id ?? '-' }}</span>
-                                            <span class="text-[10px] text-gray-400">ID SKU: {{ $product->sku_id ?? '-' }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Qty: {{ $product->quantity }}</span>
-                                        </div>
-                                        <div class="text-[10px] text-gray-500 mt-1">
-                                            Resi: <span class="font-medium text-gray-700 dark:text-gray-300">{{ $product->tracking_number ?? '-' }}</span>
-                                        </div>
+                                    <div class="flex gap-3">
                                         @if($product->product_image_url)
-                                            <div class="mt-2 group/preview relative inline-block">
-                                                <a href="{{ $product->product_image_url }}" target="_blank" class="block">
-                                                    <div class="relative w-10 h-10 overflow-hidden rounded border border-gray-200 dark:border-gray-600 shadow-xs bg-gray-50 flex items-center justify-center">
-                                                        <img src="{{ $product->product_image_url }}" 
-                                                             alt="Original" 
-                                                             class="w-full h-full object-cover transition-transform duration-300 group-hover/preview:scale-110"
-                                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                                        <div class="hidden items-center justify-center h-full w-full bg-gray-50 text-[8px] text-gray-400">Err</div>
-                                                    </div>
+                                            <div class="flex-shrink-0 relative group/preview">
+                                                <a href="{{ $product->product_image_url }}" target="_blank" class="block w-14 h-14 overflow-hidden rounded border border-gray-200 dark:border-gray-600 bg-gray-50">
+                                                    <img src="{{ $product->product_image_url }}" 
+                                                         alt="Original" 
+                                                         class="w-full h-full object-cover transition-transform duration-300 group-hover/preview:scale-110"
+                                                         onerror="this.src='/assets/images/placeholder.jpg'">
                                                 </a>
-                                                <!-- Tooltip/Label on hover -->
-                                                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover/preview:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-                                                    Original Image
-                                                </div>
                                             </div>
                                         @endif
+                                        <div class="flex flex-col">
+                                            <span class="font-medium text-gray-900 dark:text-white text-xs leading-tight mb-1">{{ $product->sku_platform }} x {{ $product->quantity }}</span>
+                                            <span class="text-[10px] text-gray-500 leading-tight">Option: {{ $product->product_specification }}</span>
+                                            <span class="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">warehouse: Indonesian warehouse</span>
+                                            <a href="{{ $product->product_image_url }}" target="_blank" class="text-[10px] text-blue-500 hover:underline mt-1">source <svg class="inline-block w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></a>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 drop-zone transition-all relative group" data-action="{{ route('product-export.upload', $product) }}">
@@ -683,7 +674,7 @@
                                                     $displayPath = Storage::disk('public')->exists($thumbnailPath) ? $thumbnailPath : $product->image_path;
                                                 @endphp
                                                 <img src="{{ Storage::disk('public')->url($displayPath) }}" 
-                                                     alt="Product" 
+                                                     alt="Uploaded" 
                                                      class="w-12 h-12 object-cover rounded border border-gray-200 dark:border-gray-600 shadow-sm"
                                                      loading="lazy">
                                             @else
@@ -695,17 +686,29 @@
                                             <input type="file" name="image" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer upload-input z-10">
                                         </div>
                                         
-                                        <div class="flex flex-col min-w-[100px]">
-                                            <div class="flex justify-between items-center mb-1">
-                                                <span class="text-[10px] uppercase tracking-wider text-gray-400 group-hover:text-blue-500 font-semibold transition-colors">
-                                                    {{ $product->image_path ? 'Change Image' : 'Drop Image' }}
-                                                </span>
-                                                <span class="progress-text text-[10px] font-medium text-blue-500 hidden">0%</span>
-                                            </div>
+                                        <div class="flex flex-col min-w-[80px]">
+                                            <span class="progress-text text-[10px] font-medium text-blue-500 hidden mb-1">0%</span>
                                             <div class="progress-container w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 hidden">
                                                 <div class="progress-bar bg-blue-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
                                             </div>
                                         </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col">
+                                        <a href="#" class="text-xs text-blue-600 hover:underline font-medium mb-1">{{ $product->order_number }}</a>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white w-fit uppercase">Book</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col text-[10px] text-gray-500 space-y-0.5">
+                                        <p>Order placed: <span class="font-medium text-gray-700 dark:text-gray-300">{{ $product->created_at->format('Y-m-d H:i') }}</span></p>
+                                        <p>Payment: -</p>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col">
+                                        <span class="text-xs text-blue-500 font-medium">TikTok online shipping</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
@@ -714,29 +717,42 @@
                                             $mergedThumbnailPath = 'thumbnails/merged/' . basename($product->merged_image);
                                             $displayMergedPath = Storage::disk('public')->exists($mergedThumbnailPath) ? $mergedThumbnailPath : $product->merged_image;
                                         @endphp
-                                        <a href="{{ Storage::disk('public')->url($product->merged_image) }}" target="_blank" class="block w-12 h-12">
+                                        <a href="{{ Storage::disk('public')->url($product->merged_image) }}" target="_blank" class="block w-12 h-12 group/merged relative">
                                             <img src="{{ Storage::disk('public')->url($displayMergedPath) }}" 
                                                  alt="Merged" 
-                                                 class="w-full h-full object-cover rounded shadow-sm hover:scale-105 transition-transform"
+                                                 class="w-full h-full object-cover rounded shadow-sm hover:scale-110 transition-transform duration-300"
                                                  loading="lazy">
+                                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover/merged:opacity-100 transition-opacity rounded flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            </div>
                                         </a>
                                     @else
-                                        <span class="text-xs text-gray-400 italic">Pending</span>
+                                        <div class="w-12 h-12 bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 rounded flex items-center justify-center">
+                                            <span class="text-[8px] text-gray-400 uppercase font-bold">Pending</span>
+                                        </div>
                                     @endif
                                 </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-xs text-gray-700 dark:text-gray-300">Paid</span>
+                                </td>
                                 <td class="px-6 py-4 text-right">
-                                    <form action="{{ route('product-export.destroy', $product) }}" method="POST" onsubmit="return confirmDelete(this)">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </form>
+                                    <div class="flex flex-col items-end gap-1">
+                                        @if($product->merged_image)
+                                            <a href="{{ Storage::disk('public')->url($product->merged_image) }}" target="_blank" class="text-xs text-blue-600 hover:underline">Details</a>
+                                        @else
+                                            <span class="text-xs text-gray-300 italic">Pending</span>
+                                        @endif
+                                        <form action="{{ route('product-export.destroy', $product) }}" method="POST" onsubmit="return confirmDelete(this)">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-[10px] text-red-500 hover:text-red-700 transition-colors uppercase font-bold tracking-tighter">Delete</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">
+                                <td colspan="9" class="px-6 py-10 text-center text-gray-400 italic">
                                     No data available.
                                 </td>
                             </tr>
